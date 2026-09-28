@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WATTWISE — โปรแกรมคำนวณค่าไฟฟ้าภายในบ้าน</title>
+<style>
+:root{
+  --bg:#f4f7fb;--card:#fff;--text:#172033;--muted:#667085;--primary:#1677b7;
+  --primary2:#28a9c7;--line:#e4e9f0;--danger:#e25555;--success:#16845b;
+  --shadow:0 12px 32px rgba(24,39,75,.08);--radius:18px;
+}
+*{box-sizing:border-box}
+body{margin:0;font-family:system-ui,-apple-system,"Segoe UI","Noto Sans Thai",Tahoma,sans-serif;background:var(--bg);color:var(--text)}
+.header{background:linear-gradient(110deg,#116cac,#2aa9bd);color:#fff;padding:25px 20px}
+.header-inner{max-width:1180px;margin:auto}
+.brand{font-size:26px;font-weight:800;letter-spacing:-.5px}
+.subtitle{margin-top:5px;opacity:.92;font-size:14px}
+.wrap{max-width:1180px;margin:28px auto;padding:0 18px}
+.topline{display:flex;justify-content:space-between;align-items:end;gap:15px;margin-bottom:16px}
+h1{font-size:28px;margin:0 0 5px}
+.lead{margin:0;color:var(--muted)}
+button{border:0;border-radius:12px;padding:12px 17px;font-weight:750;cursor:pointer;font-size:14px}
+.btn-primary{background:var(--primary);color:#fff}.btn-primary:hover{filter:brightness(.95)}
+.btn-light{background:#edf4fb;color:#14659b}.btn-danger{background:#fff0f0;color:#d54c4c}
+.cards{display:grid;grid-template-columns:repeat(4,1fr);gap:15px;margin:18px 0}
+.card,.panel{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow)}
+.card{padding:20px}
+.kicker{color:var(--muted);font-size:14px}.value{font-size:23px;font-weight:850;margin-top:8px}
+.panel{padding:22px;margin-top:16px}
+.panel-title{font-size:20px;font-weight:800;margin:0 0 18px}
+.grid-form{display:grid;grid-template-columns:2fr 1fr 1fr;gap:14px}
+.field label{display:block;font-size:13px;font-weight:750;margin-bottom:7px}
+.field input{width:100%;height:44px;border:1px solid #ccd6e2;border-radius:11px;padding:0 12px;font-size:15px;outline:none}
+.field input:focus{border-color:#4ba9d1;box-shadow:0 0 0 3px rgba(75,169,209,.12)}
+.add-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-top:14px}
+.add-row .btn-primary{height:44px}
+.table-wrap{overflow:auto}
+table{width:100%;border-collapse:collapse;min-width:760px}
+th,td{text-align:left;padding:13px 10px;border-bottom:1px solid var(--line);font-size:14px}
+th{color:#5d6878;background:#f8fafc}
+.num{text-align:right}
+.empty{text-align:center;color:var(--muted);padding:28px}
+.bottom-grid{display:grid;grid-template-columns:1.1fr .9fr;gap:16px}
+.bar{height:11px;background:#eaf0f5;border-radius:99px;overflow:hidden}
+.bar>span{display:block;height:100%;background:linear-gradient(90deg,#2a9fd0,#6c65df);border-radius:99px}
+.item{padding:10px 0}.item-head{display:flex;justify-content:space-between;font-size:14px;margin-bottom:7px}
+.summary{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.sumrow{padding:12px;background:#f8fafc;border-radius:12px}.sumrow small{display:block;color:var(--muted)}.sumrow b{display:block;margin-top:3px}
+.total{margin-top:12px;padding:17px;border-radius:14px;background:linear-gradient(110deg,#eaf7ff,#eefcff);display:flex;justify-content:space-between;align-items:center}
+.total strong{font-size:24px;color:#0c6fa7}
+.note{font-size:12px;color:var(--muted);line-height:1.6;margin-top:12px}
+.badge{display:inline-block;padding:4px 8px;border-radius:99px;background:#eaf6ef;color:#16845b;font-size:12px;font-weight:700}
+.actions{display:flex;gap:7px}.actions button{padding:7px 10px;font-size:12px}
+.modal{display:none;position:fixed;inset:0;background:rgba(10,25,45,.48);align-items:center;justify-content:center;padding:18px;z-index:10}
+.modal.show{display:flex}.modal-box{background:#fff;border-radius:18px;max-width:680px;width:100%;padding:24px;max-height:90vh;overflow:auto}
+.modal-head{display:flex;justify-content:space-between;align-items:center}
+.modal-head h2{margin:0}.close{background:#f1f4f7;padding:7px 11px}
+.rate-table{width:100%;min-width:0}.rate-table th,.rate-table td{padding:9px}
+.footer{text-align:center;color:#7a8492;font-size:12px;padding:28px 15px}
+.toast{position:fixed;right:18px;bottom:18px;background:#172033;color:#fff;padding:12px 16px;border-radius:12px;display:none;z-index:20}
+@media(max-width:900px){.cards{grid-template-columns:repeat(2,1fr)}.bottom-grid{grid-template-columns:1fr}.grid-form{grid-template-columns:1fr 1fr}.add-row{grid-template-columns:1fr 1fr}}
+@media(max-width:600px){.cards{grid-template-columns:1fr}.grid-form,.add-row{grid-template-columns:1fr}.topline{align-items:start;flex-direction:column}.wrap{margin-top:20px}.header{padding:20px}.brand{font-size:22px}}
+</style>
+</head>
+<body>
+<header class="header">
+  <div class="header-inner">
+    <div class="brand">⚡ WATTWISE — Household Electricity Calculator</div>
+    <div class="subtitle">โปรแกรมคำนวณและประมาณการค่าไฟฟ้าภายในบ้าน • อ้างอิงอัตราค่าไฟบ้านอยู่อาศัย กฟภ. (PEA) งวดกันยายน–ธันวาคม 2569</div>
+  </div>
+</header>
+
+<main class="wrap">
+  <div class="topline">
+    <div>
+      <h1>คำนวณค่าไฟฟ้าของบ้านคุณ</h1>
+      <p class="lead">เพิ่มเครื่องใช้ไฟฟ้า ระบุจำนวนและเวลาใช้งาน แล้วระบบจะคำนวณ kWh และประมาณค่าไฟตามโครงสร้างอัตราปัจจุบัน</p>
+    </div>
+    <button class="btn-danger" id="clearAll">ล้างข้อมูลทั้งหมด</button>
+  </div>
+
+  <section class="cards">
+    <div class="card"><div class="kicker">⚡ หน่วยไฟฟ้า / เดือน</div><div class="value" id="totalKwh">0.00 kWh</div></div>
+    <div class="card"><div class="kicker">💰 ค่าไฟรวมโดยประมาณ</div><div class="value" id="grandTotal">0.00 บาท</div></div>
+    <div class="card"><div class="kicker">🔌 จำนวนเครื่อง</div><div class="value" id="deviceCount">0</div></div>
+    <div class="card"><div class="kicker">📈 ใช้ไฟสูงสุด</div><div class="value" id="topDevice">—</div></div>
+  </section>
+
+  <section class="panel">
+    <h2 class="panel-title">➕ เพิ่มเครื่องใช้ไฟฟ้า</h2>
+    <div class="grid-form">
+      <div class="field"><label>ชื่อเครื่องใช้ไฟฟ้า</label><input id="name" placeholder="เช่น เครื่องปรับอากาศ"></div>
+      <div class="field"><label>กำลังไฟ (W)</label><input id="watt" type="number" min="0.01" step="0.01" placeholder="เช่น 1200"></div>
+      <div class="field"><label>จำนวนเครื่อง</label><input id="qty" type="number" min="1" step="1" value="1"></div>
+    </div>
+    <div class="add-row">
+      <div class="field"><label>ชั่วโมง/วัน</label><input id="hours" type="number" min="0" max="24" step="0.1" value="1"></div>
+      <div class="field"><label>วัน/เดือน</label><input id="days" type="number" min="1" max="31" step="1" value="30"></div>
+      <button class="btn-primary" id="addBtn">เพิ่มรายการ</button>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:12px">
+      <h2 class="panel-title" style="margin-bottom:0">📋 รายการเครื่องใช้ไฟฟ้า</h2>
+      <span class="badge">คำนวณอัตโนมัติ</span>
+    </div>
+    <div class="table-wrap" style="margin-top:14px">
+      <table>
+        <thead><tr><th>เครื่องใช้ไฟฟ้า</th><th class="num">W</th><th class="num">จำนวน</th><th class="num">ชม./วัน</th><th class="num">kWh/เดือน</th><th class="num">ค่าไฟประมาณ</th><th>จัดการ</th></tr></thead>
+        <tbody id="tbody"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <div class="bottom-grid">
+    <section class="panel">
+      <h2 class="panel-title">📊 สัดส่วนการใช้ไฟ</h2>
+      <div id="breakdown"></div>
+    </section>
+
+    <section class="panel">
+      <h2 class="panel-title">💡 สรุปค่าไฟตามโครงสร้าง</h2>
+      <div class="summary">
+        <div class="sumrow"><small>ค่าไฟฟ้าฐาน</small><b id="baseCharge">0.00 บาท</b></div>
+        <div class="sumrow"><small>ค่า Ft</small><b id="ftCharge">0.00 บาท</b></div>
+        <div class="sumrow"><small>ค่าบริการ</small><b id="serviceCharge">0.00 บาท</b></div>
+        <div class="sumrow"><small>VAT 7%</small><b id="vatCharge">0.00 บาท</b></div>
+      </div>
+      <div class="total"><span>ค่าไฟรวมโดยประมาณ</span><strong id="detailTotal">0.00 บาท</strong></div>
+      <div class="note">
+        อัตราที่ใช้: บ้านอยู่อาศัยแบบอัตราปกติ (PEA ประเภท 1.1) มีผลตั้งแต่ค่าไฟประจำเดือนกันยายน 2569 เป็นต้นไป และใช้ค่า Ft งวดกันยายน–ธันวาคม 2569 = 0.1623 บาท/หน่วย
+        <br>หมายเหตุ: ผลลัพธ์เป็นการประมาณจากการใช้ไฟที่ผู้ใช้กรอก ไม่ใช่ใบแจ้งค่าไฟจริง
+      </div>
+      <button class="btn-light" style="margin-top:12px" id="showRates">ดูอัตราที่ใช้คำนวณ</button>
+    </section>
+  </div>
+</main>
+
+<div class="footer">
+  ข้อมูลอัตราค่าไฟอ้างอิงจากการไฟฟ้าส่วนภูมิภาค (PEA) และสำนักงานคณะกรรมการกำกับกิจการพลังงาน (กกพ.) • โปรแกรมนี้จัดทำเพื่อการศึกษาและประมาณการ
+</div>
+
+<div class="modal" id="rateModal">
+  <div class="modal-box">
+    <div class="modal-head"><h2>อัตราค่าไฟที่ใช้ในระบบ</h2><button class="close" id="closeModal">✕</button></div>
+    <p class="note">บ้านอยู่อาศัย ประเภท 1.1 อัตราปกติ ตามโครงสร้างที่มีผลตั้งแต่ค่าไฟประจำเดือนกันยายน 2569</p>
+    <table class="rate-table">
+      <thead><tr><th>ช่วงการใช้</th><th>อัตรา</th></tr></thead>
+      <tbody>
+        <tr><td>หน่วยที่ 1–15</td><td>2.3488 บาท/หน่วย</td></tr>
+        <tr><td>หน่วยที่ 16–25</td><td>2.9882 บาท/หน่วย</td></tr>
+        <tr><td>หน่วยที่ 26–150 (กรณีไม่เกิน 150 หน่วย)</td><td>3.0000 บาท/หน่วย</td></tr>
+        <tr><td>กรณีใช้เกิน 150: หน่วยที่ 1–200</td><td>3.0000 บาท/หน่วย</td></tr>
+        <tr><td>หน่วยที่ 201–400</td><td>4.1584 บาท/หน่วย</td></tr>
+        <tr><td>หน่วยที่ 401 ขึ้นไป</td><td>4.3583 บาท/หน่วย</td></tr>
+        <tr><td>ค่าบริการ ≤150 หน่วย/เดือน</td><td>8.19 บาท/เดือน</td></tr>
+        <tr><td>ค่าบริการ &gt;150 หน่วย/เดือน</td><td>24.62 บาท/เดือน</td></tr>
+        <tr><td>ค่า Ft ก.ย.–ธ.ค. 2569</td><td>0.1623 บาท/หน่วย</td></tr>
+        <tr><td>VAT</td><td>7%</td></tr>
+      </tbody>
+    </table>
+    <p class="note">
+      แหล่งข้อมูลทางการ: การไฟฟ้าส่วนภูมิภาค (PEA) — โครงสร้างอัตราค่าไฟฟ้าปี 2569 และสำนักงาน กกพ. — ค่า Ft งวดกันยายน–ธันวาคม 2569
+    </p>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const STORAGE_KEY = "wattwise_2026";
+const FT = 0.1623;
+const VAT = 0.07;
+
+let items = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
+
+function money(n){ return Number(n).toLocaleString("th-TH",{minimumFractionDigits:2,maximumFractionDigits:2}); }
+function num(v){ return Number(v) || 0; }
+
+function kwhFor(x){
+  return (x.watt/1000) * x.qty * x.hours * x.days;
+}
+
+/* PEA residential normal tariff, category 1.1, effective from Sep 2026 */
+function baseChargeFor(totalKwh){
+  let u = Math.max(0,totalKwh), c = 0;
+  if(u <= 150){
+    c += Math.min(u,15) * 2.3488;
+    if(u > 15) c += Math.min(u,25)-15 > 0 ? (Math.min(u,25)-15)*2.9882 : 0;
+    if(u > 25) c += (u-25)*3.0000;
+  }else{
+    c += Math.min(u,200) * 3.0000;
+    if(u > 200) c += Math.min(u,400)-200 > 0 ? (Math.min(u,400)-200)*4.1584 : 0;
+    if(u > 400) c += (u-400)*4.3583;
+  }
+  return c;
+}
+
+function charges(totalKwh){
+  const base = baseChargeFor(totalKwh);
+  const ft = totalKwh * FT;
+  const service = totalKwh <= 150 ? 8.19 : 24.62;
+  const subtotal = base + ft + service;
+  const vat = subtotal * VAT;
+  return {base,ft,service,vat,total:subtotal+vat};
+}
+
+/* For each row, show an estimated attributable cost.
+   This allocates the household total cost proportionally by kWh. */
+function rowCost(kwh,totalKwh,totalCost){
+  return totalKwh > 0 ? totalCost * (kwh/totalKwh) : 0;
+}
+
+function save(){ localStorage.setItem(STORAGE_KEY,JSON.stringify(items)); }
+
+function render(){
+  const totalKwh = items.reduce((s,x)=>s+kwhFor(x),0);
+  const ch = charges(totalKwh);
+  const tbody = document.getElementById("tbody");
+  tbody.innerHTML = "";
+
+  if(!items.length){
+    tbody.innerHTML = '<tr><td colspan="7" class="empty">ยังไม่มีรายการเครื่องใช้ไฟฟ้า — เพิ่มรายการด้านบนเพื่อเริ่มคำนวณ</td></tr>';
+  }else{
+    items.forEach((x,i)=>{
+      const k = kwhFor(x);
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td><b>${escapeHtml(x.name)}</b></td>
+        <td class="num">${money(x.watt)}</td>
+        <td class="num">${x.qty}</td>
+        <td class="num">${money(x.hours)}</td>
+        <td class="num">${money(k)}</td>
+        <td class="num">${money(rowCost(k,totalKwh,ch.total))} บาท</td>
+        <td><div class="actions"><button class="btn-light" onclick="editItem(${i})">แก้ไข</button><button class="btn-danger" onclick="deleteItem(${i})">ลบ</button></div></td>
+      `;
+      tbody.appendChild(tr);
+    });
+  }
+
+  document.getElementById("totalKwh").textContent = money(totalKwh)+" kWh";
+  document.getElementById("grandTotal").textContent = money(ch.total)+" บาท";
+  document.getElementById("detailTotal").textContent = money(ch.total)+" บาท";
+  document.getElementById("deviceCount").textContent = items.reduce((s,x)=>s+Number(x.qty),0);
+
+  const top = [...items].sort((a,b)=>kwhFor(b)-kwhFor(a))[0];
+  document.getElementById("topDevice").textContent = top ? top.name : "—";
+  document.getElementById("baseCharge").textContent = money(ch.base)+" บาท";
+  document.getElementById("ftCharge").textContent = money(ch.ft)+" บาท";
+  document.getElementById("serviceCharge").textContent = money(ch.service)+" บาท";
+  document.getElementById("vatCharge").textContent = money(ch.vat)+" บาท";
+
+  const bd = document.getElementById("breakdown");
+  bd.innerHTML = "";
+  const sorted = [...items].sort((a,b)=>kwhFor(b)-kwhFor(a));
+  const max = sorted.length ? Math.max(...sorted.map(kwhFor)) : 0;
+  if(!sorted.length) bd.innerHTML = '<div class="empty">เพิ่มรายการเพื่อดูสัดส่วนการใช้ไฟ</div>';
+  sorted.forEach(x=>{
+    const k = kwhFor(x), pct = totalKwh ? k/totalKwh*100 : 0;
+    const el = document.createElement("div");
+    el.className="item";
+    el.innerHTML=`<div class="item-head"><span>${escapeHtml(x.name)}</span><b>${money(k)} kWh (${pct.toFixed(1)}%)</b></div><div class="bar"><span style="width:${max?Math.max(2,k/max*100):0}%"></span></div>`;
+    bd.appendChild(el);
+  });
+}
+
+function escapeHtml(s){
+  return String(s).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]));
+}
+
+function addItem(){
+  const name=document.getElementById("name").value.trim();
+  const watt=num(document.getElementById("watt").value);
+  const qty=num(document.getElementById("qty").value);
+  const hours=num(document.getElementById("hours").value);
+  const days=num(document.getElementById("days").value);
+
+  if(!name || watt<=0 || qty<=0 || hours<0 || hours>24 || days<1 || days>31){
+    toast("กรุณากรอกข้อมูลให้ถูกต้อง");
+    return;
+  }
+  items.push({name,watt,qty,hours,days});
+  save(); render();
+  document.getElementById("name").value="";
+  document.getElementById("watt").value="";
+  document.getElementById("qty").value="1";
+  document.getElementById("hours").value="1";
+  document.getElementById("days").value="30";
+  toast("เพิ่มรายการเรียบร้อยแล้ว");
+}
+
+function deleteItem(i){
+  if(confirm("ต้องการลบรายการนี้หรือไม่?")){
+    items.splice(i,1); save(); render(); toast("ลบรายการแล้ว");
+  }
+}
+
+function editItem(i){
+  const x=items[i];
+  const name=prompt("ชื่อเครื่องใช้ไฟฟ้า",x.name);
+  if(name===null) return;
+  const watt=prompt("กำลังไฟ (W)",x.watt);
+  const qty=prompt("จำนวนเครื่อง",x.qty);
+  const hours=prompt("ชั่วโมง/วัน",x.hours);
+  const days=prompt("วัน/เดือน",x.days);
+  const n={name:name.trim(),watt:num(watt),qty:num(qty),hours:num(hours),days:num(days)};
+  if(!n.name || n.watt<=0 || n.qty<=0 || n.hours<0 || n.hours>24 || n.days<1 || n.days>31){
+    toast("ข้อมูลไม่ถูกต้อง จึงไม่ได้บันทึก");
+    return;
+  }
+  items[i]=n; save(); render(); toast("แก้ไขข้อมูลแล้ว");
+}
+
+function toast(msg){
+  const t=document.getElementById("toast"); t.textContent=msg;t.style.display="block";
+  clearTimeout(window.__toast);window.__toast=setTimeout(()=>t.style.display="none",2200);
+}
+
+document.getElementById("addBtn").addEventListener("click",addItem);
+document.getElementById("clearAll").addEventListener("click",()=>{
+  if(confirm("ต้องการล้างข้อมูลเครื่องใช้ไฟฟ้าทั้งหมดหรือไม่?")){
+    items=[];save();render();toast("ล้างข้อมูลทั้งหมดแล้ว");
+  }
+});
+document.getElementById("showRates").addEventListener("click",()=>document.getElementById("rateModal").classList.add("show"));
+document.getElementById("closeModal").addEventListener("click",()=>document.getElementById("rateModal").classList.remove("show"));
+document.getElementById("rateModal").addEventListener("click",e=>{if(e.target.id==="rateModal")e.currentTarget.classList.remove("show")});
+
+render();
+</script>
+</body>
+</html>
